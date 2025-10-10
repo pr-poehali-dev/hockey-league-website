@@ -48,6 +48,8 @@ export default function Index() {
 
   const [editTeam, setEditTeam] = useState<Team>({ id: 0, name: '', wins: 0, losses: 0, points: 0, goalsFor: 0, goalsAgainst: 0 });
   const [editMatch, setEditMatch] = useState<Match>({ id: 0, date: '', time: '', homeTeam: '', awayTeam: '' });
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const [showEditStatsDialog, setShowEditStatsDialog] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -88,6 +90,15 @@ export default function Index() {
   const deleteTeam = (id: number) => {
     setTeams(teams.filter(t => t.id !== id));
     toast({ title: 'Команда удалена' });
+  };
+
+  const updateTeamStats = () => {
+    if (selectedTeam) {
+      setTeams(teams.map(t => t.id === selectedTeam.id ? selectedTeam : t));
+      setShowEditStatsDialog(false);
+      setSelectedTeam(null);
+      toast({ title: 'Статистика обновлена' });
+    }
   };
 
   const addMatch = () => {
@@ -162,9 +173,14 @@ export default function Index() {
                         {teams.map(team => (
                           <div key={team.id} className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
                             <span>{team.name}</span>
-                            <Button variant="destructive" size="sm" onClick={() => deleteTeam(team.id)}>
-                              <Icon name="Trash2" size={16} />
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button variant="outline" size="sm" onClick={() => { setSelectedTeam(team); setShowEditStatsDialog(true); }}>
+                                <Icon name="Edit" size={16} />
+                              </Button>
+                              <Button variant="destructive" size="sm" onClick={() => deleteTeam(team.id)}>
+                                <Icon name="Trash2" size={16} />
+                              </Button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -255,8 +271,6 @@ export default function Index() {
                         <th className="px-6 py-4 text-center text-sm font-semibold">И</th>
                         <th className="px-6 py-4 text-center text-sm font-semibold">В</th>
                         <th className="px-6 py-4 text-center text-sm font-semibold">П</th>
-                        <th className="px-6 py-4 text-center text-sm font-semibold">Ш</th>
-                        <th className="px-6 py-4 text-center text-sm font-semibold">Пр</th>
                         <th className="px-6 py-4 text-center text-sm font-semibold">О</th>
                       </tr>
                     </thead>
@@ -274,10 +288,6 @@ export default function Index() {
                           <td className="px-6 py-4 text-center text-muted-foreground">{team.wins + team.losses}</td>
                           <td className="px-6 py-4 text-center text-green-400">{team.wins}</td>
                           <td className="px-6 py-4 text-center text-red-400">{team.losses}</td>
-                          <td className="px-6 py-4 text-center text-muted-foreground">{team.goalsFor}:{team.goalsAgainst}</td>
-                          <td className="px-6 py-4 text-center text-muted-foreground">
-                            {team.goalsFor - team.goalsAgainst > 0 ? '+' : ''}{team.goalsFor - team.goalsAgainst}
-                          </td>
                           <td className="px-6 py-4 text-center">
                             <span className="px-3 py-1 bg-primary/20 rounded-full font-bold text-primary">{team.points}</span>
                           </td>
@@ -428,6 +438,67 @@ export default function Index() {
               Войти
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showEditStatsDialog} onOpenChange={setShowEditStatsDialog}>
+        <DialogContent className="bg-card border-primary/20">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Icon name="Edit" size={24} />
+              Редактировать статистику: {selectedTeam?.name}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedTeam && (
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Победы</Label>
+                  <Input
+                    type="number"
+                    value={selectedTeam.wins}
+                    onChange={(e) => setSelectedTeam({...selectedTeam, wins: +e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Поражения</Label>
+                  <Input
+                    type="number"
+                    value={selectedTeam.losses}
+                    onChange={(e) => setSelectedTeam({...selectedTeam, losses: +e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Очки</Label>
+                  <Input
+                    type="number"
+                    value={selectedTeam.points}
+                    onChange={(e) => setSelectedTeam({...selectedTeam, points: +e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Забито голов</Label>
+                  <Input
+                    type="number"
+                    value={selectedTeam.goalsFor}
+                    onChange={(e) => setSelectedTeam({...selectedTeam, goalsFor: +e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Пропущено голов</Label>
+                  <Input
+                    type="number"
+                    value={selectedTeam.goalsAgainst}
+                    onChange={(e) => setSelectedTeam({...selectedTeam, goalsAgainst: +e.target.value})}
+                  />
+                </div>
+              </div>
+              <Button onClick={updateTeamStats} className="w-full">
+                <Icon name="Save" size={18} className="mr-2" />
+                Сохранить изменения
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
