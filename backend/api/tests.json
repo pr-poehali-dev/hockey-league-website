@@ -1,0 +1,26 @@
+{
+  "tests": [
+    {
+      "name": "Get teams list",
+      "method": "GET",
+      "path": "/?path=teams",
+      "expectedStatus": 200,
+      "expectedBody": [],
+      "bodyMatcher": "type"
+    },
+    {
+      "name": "Get matches list",
+      "method": "GET",
+      "path": "/?path=matches",
+      "expectedStatus": 200,
+      "expectedBody": [],
+      "bodyMatcher": "type"
+    },
+    {
+      "name": "Get social links",
+      "method": "GET",
+      "path": "/?path=socials",
+      "expectedStatus": 200
+    }
+  ]
+}
