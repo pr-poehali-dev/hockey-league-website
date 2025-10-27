@@ -6,33 +6,33 @@
 
 @layer base {
   :root {
-    --background: 217 33% 17%;
+    --background: 0 0% 0%;
     --foreground: 0 0% 100%;
 
-    --card: 222 47% 11%;
+    --card: 0 0% 8%;
     --card-foreground: 0 0% 100%;
 
-    --popover: 222 47% 11%;
+    --popover: 0 0% 8%;
     --popover-foreground: 0 0% 100%;
 
-    --primary: 199 89% 48%;
+    --primary: 25 95% 53%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 217 33% 17%;
+    --secondary: 0 0% 12%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 217 33% 25%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 65%;
 
-    --accent: 0 72% 51%;
+    --accent: 25 95% 53%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 217 33% 25%;
-    --input: 217 33% 25%;
-    --ring: 199 89% 48%;
+    --border: 25 95% 53%;
+    --input: 0 0% 15%;
+    --ring: 25 95% 53%;
 
     --radius: 0.75rem;
   }
@@ -51,11 +51,11 @@
 
 @layer utilities {
   .gradient-blue {
-    background: linear-gradient(135deg, #0ea5e9 0%, #1e293b 100%);
+    background: linear-gradient(135deg, #ff7700 0%, #000000 100%);
   }
 
   .gradient-shift {
-    background: linear-gradient(135deg, #0ea5e9 0%, #1e293b 100%);
+    background: linear-gradient(135deg, #ff7700 0%, #000000 100%);
     background-size: 200% 200%;
     animation: gradient-shift 8s ease infinite;
   }
