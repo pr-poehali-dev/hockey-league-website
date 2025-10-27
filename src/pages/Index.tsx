@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 const API_URL = 'https://functions.poehali.dev/7c44af1d-941f-4cb8-922a-9b9a4f016a80';
+const UPLOAD_URL = 'https://functions.poehali.dev/8f2aa7eb-f52a-4303-bc7d-28dd1173e4cd';
 const ADMIN_PASSWORD = 'phldyez';
 
 interface Team {
@@ -55,6 +56,7 @@ export default function Index() {
   const [socials, setSocials] = useState<SocialLink[]>([]);
   const [champions, setChampions] = useState<Champion[]>([]);
   const [rules, setRules] = useState('');
+  const [leagueInfo, setLeagueInfo] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
   const [showAdminDialog, setShowAdminDialog] = useState(false);
@@ -68,12 +70,13 @@ export default function Index() {
 
   const fetchData = async () => {
     try {
-      const [teamsRes, matchesRes, socialsRes, championsRes, rulesRes] = await Promise.all([
+      const [teamsRes, matchesRes, socialsRes, championsRes, rulesRes, leagueInfoRes] = await Promise.all([
         fetch(`${API_URL}?path=teams`),
         fetch(`${API_URL}?path=matches`),
         fetch(`${API_URL}?path=socials`),
         fetch(`${API_URL}?path=champions`),
-        fetch(`${API_URL}?path=rules`)
+        fetch(`${API_URL}?path=rules`),
+        fetch(`${API_URL}?path=league_info`)
       ]);
       
       setTeams(await teamsRes.json());
@@ -82,6 +85,8 @@ export default function Index() {
       setChampions(await championsRes.json());
       const rulesData = await rulesRes.json();
       setRules(rulesData.rules || '');
+      const leagueInfoData = await leagueInfoRes.json();
+      setLeagueInfo(leagueInfoData.league_info || '');
     } catch (error) {
       console.error('Error fetching data:', error);
     }
@@ -90,6 +95,45 @@ export default function Index() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const uploadImage = async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        try {
+          const response = await fetch(UPLOAD_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: reader.result })
+          });
+          const data = await response.json();
+          if (data.url) {
+            resolve(data.url);
+          } else {
+            reject(new Error('Upload failed'));
+          }
+        } catch (error) {
+          reject(error);
+        }
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, callback: (url: string) => void) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        toast({ title: 'Загружаю изображение...' });
+        const url = await uploadImage(file);
+        callback(url);
+        toast({ title: 'Изображение загружено' });
+      } catch (error) {
+        toast({ title: 'Ошибка загрузки', variant: 'destructive' });
+      }
+    }
+  };
 
   const handleAdminLogin = () => {
     if (passwordInput === ADMIN_PASSWORD) {
@@ -254,12 +298,35 @@ export default function Index() {
     }
   };
 
+  const updateLeagueInfo = async () => {
+    try {
+      await fetch(`${API_URL}?path=league_info`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ league_info: leagueInfo })
+      });
+      toast({ title: 'Информация о лиге обновлена' });
+    } catch (error) {
+      toast({ title: 'Ошибка', variant: 'destructive' });
+    }
+  };
+
   const sortedTeams = [...teams].sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
     const diffA = a.goals_for - a.goals_against;
     const diffB = b.goals_for - b.goals_against;
     return diffB - diffA;
   });
+
+  const getSocialIcon = (platform: string) => {
+    const icons: { [key: string]: string } = {
+      telegram: 'Send',
+      discord: 'MessageCircle',
+      twitch: 'Video',
+      tiktok: 'Music'
+    };
+    return icons[platform] || 'Link';
+  };
 
   return (
     <div className="min-h-screen gradient-shift">
@@ -293,7 +360,15 @@ export default function Index() {
                       <h3 className="text-lg font-semibold mb-4">Команды</h3>
                       <div className="space-y-3">
                         <Input placeholder="Название команды" value={editTeam.name} onChange={(e) => setEditTeam({...editTeam, name: e.target.value})} />
-                        <Input placeholder="URL логотипа" value={editTeam.logo} onChange={(e) => setEditTeam({...editTeam, logo: e.target.value})} />
+                        <div>
+                          <Label>Логотип команды</Label>
+                          <Input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={(e) => handleImageUpload(e, (url) => setEditTeam({...editTeam, logo: url}))}
+                          />
+                          {editTeam.logo && <img src={editTeam.logo} alt="Preview" className="mt-2 w-16 h-16 object-contain" />}
+                        </div>
                         <div className="grid grid-cols-2 gap-2">
                           <Input type="number" placeholder="Победы" value={editTeam.wins || ''} onChange={(e) => setEditTeam({...editTeam, wins: +e.target.value})} />
                           <Input type="number" placeholder="Поражения" value={editTeam.losses || ''} onChange={(e) => setEditTeam({...editTeam, losses: +e.target.value})} />
@@ -331,9 +406,25 @@ export default function Index() {
                           <Input type="time" value={editMatch.time} onChange={(e) => setEditMatch({...editMatch, time: e.target.value})} />
                         </div>
                         <Input placeholder="Хозяева" value={editMatch.home_team} onChange={(e) => setEditMatch({...editMatch, home_team: e.target.value})} />
-                        <Input placeholder="URL логотипа хозяев" value={editMatch.home_team_logo} onChange={(e) => setEditMatch({...editMatch, home_team_logo: e.target.value})} />
+                        <div>
+                          <Label>Логотип хозяев</Label>
+                          <Input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={(e) => handleImageUpload(e, (url) => setEditMatch({...editMatch, home_team_logo: url}))}
+                          />
+                          {editMatch.home_team_logo && <img src={editMatch.home_team_logo} alt="Preview" className="mt-2 w-12 h-12 object-contain" />}
+                        </div>
                         <Input placeholder="Гости" value={editMatch.away_team} onChange={(e) => setEditMatch({...editMatch, away_team: e.target.value})} />
-                        <Input placeholder="URL логотипа гостей" value={editMatch.away_team_logo} onChange={(e) => setEditMatch({...editMatch, away_team_logo: e.target.value})} />
+                        <div>
+                          <Label>Логотип гостей</Label>
+                          <Input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={(e) => handleImageUpload(e, (url) => setEditMatch({...editMatch, away_team_logo: url}))}
+                          />
+                          {editMatch.away_team_logo && <img src={editMatch.away_team_logo} alt="Preview" className="mt-2 w-12 h-12 object-contain" />}
+                        </div>
                         <div className="grid grid-cols-2 gap-2">
                           <Input type="number" placeholder="Счёт хозяев" value={editMatch.home_score || ''} onChange={(e) => setEditMatch({...editMatch, home_score: +e.target.value})} />
                           <Input type="number" placeholder="Счёт гостей" value={editMatch.away_score || ''} onChange={(e) => setEditMatch({...editMatch, away_score: +e.target.value})} />
@@ -364,7 +455,15 @@ export default function Index() {
                       <div className="space-y-3">
                         <Input placeholder="Год (например, 2023-2024)" value={editChampion.year} onChange={(e) => setEditChampion({...editChampion, year: e.target.value})} />
                         <Input placeholder="Название команды" value={editChampion.team_name} onChange={(e) => setEditChampion({...editChampion, team_name: e.target.value})} />
-                        <Input placeholder="URL логотипа" value={editChampion.logo} onChange={(e) => setEditChampion({...editChampion, logo: e.target.value})} />
+                        <div>
+                          <Label>Логотип чемпиона</Label>
+                          <Input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={(e) => handleImageUpload(e, (url) => setEditChampion({...editChampion, logo: url}))}
+                          />
+                          {editChampion.logo && <img src={editChampion.logo} alt="Preview" className="mt-2 w-16 h-16 object-contain" />}
+                        </div>
                         <Button onClick={addChampion} className="w-full">Добавить чемпиона</Button>
                       </div>
                       <div className="mt-4 space-y-2">
@@ -380,6 +479,17 @@ export default function Index() {
                           </div>
                         ))}
                       </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4">Информация о лиге</h3>
+                      <Textarea 
+                        placeholder="Введите информацию о лиге" 
+                        value={leagueInfo} 
+                        onChange={(e) => setLeagueInfo(e.target.value)}
+                        onBlur={updateLeagueInfo}
+                        rows={6}
+                      />
                     </div>
 
                     <div>
@@ -426,10 +536,11 @@ export default function Index() {
         </div>
 
         <Tabs defaultValue="table" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 bg-card/50 backdrop-blur-sm">
+          <TabsList className="grid w-full grid-cols-5 bg-card/50 backdrop-blur-sm">
             <TabsTrigger value="table">Таблица</TabsTrigger>
             <TabsTrigger value="schedule">Расписание</TabsTrigger>
             <TabsTrigger value="champions">Чемпионы</TabsTrigger>
+            <TabsTrigger value="info">Информация</TabsTrigger>
             <TabsTrigger value="rules">Регламент</TabsTrigger>
           </TabsList>
 
@@ -528,6 +639,39 @@ export default function Index() {
             </div>
           </TabsContent>
 
+          <TabsContent value="info" className="mt-6">
+            <div className="space-y-6 animate-fade-in">
+              <Card className="p-6 bg-card/80 backdrop-blur-sm border-primary/20">
+                <h2 className="text-2xl font-bold text-accent mb-4">О лиге</h2>
+                <div className="prose prose-invert max-w-none">
+                  {leagueInfo ? (
+                    <div className="whitespace-pre-wrap">{leagueInfo}</div>
+                  ) : (
+                    <p className="text-muted-foreground">Информация о лиге пока не добавлена</p>
+                  )}
+                </div>
+              </Card>
+
+              <Card className="p-6 bg-card/80 backdrop-blur-sm border-primary/20">
+                <h2 className="text-2xl font-bold text-accent mb-4">Наши соц-сети</h2>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {socials.filter(s => s.url).map(social => (
+                    <a 
+                      key={social.id} 
+                      href={social.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-4 bg-muted/20 rounded-lg hover:bg-muted/30 transition-colors"
+                    >
+                      <Icon name={getSocialIcon(social.platform)} size={24} className="text-accent" />
+                      <span className="font-semibold capitalize">{social.platform}</span>
+                    </a>
+                  ))}
+                </div>
+              </Card>
+            </div>
+          </TabsContent>
+
           <TabsContent value="rules" className="mt-6">
             <Card className="p-6 bg-card/80 backdrop-blur-sm border-primary/20 animate-fade-in">
               <div className="prose prose-invert max-w-none">
@@ -572,8 +716,13 @@ export default function Index() {
                 <Input value={selectedTeam.name} onChange={(e) => setSelectedTeam({...selectedTeam, name: e.target.value})} />
               </div>
               <div>
-                <Label>URL логотипа</Label>
-                <Input value={selectedTeam.logo || ''} onChange={(e) => setSelectedTeam({...selectedTeam, logo: e.target.value})} />
+                <Label>Логотип команды</Label>
+                <Input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={(e) => handleImageUpload(e, (url) => setSelectedTeam({...selectedTeam, logo: url}))}
+                />
+                {selectedTeam.logo && <img src={selectedTeam.logo} alt="Preview" className="mt-2 w-16 h-16 object-contain" />}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>

@@ -62,6 +62,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 result = cur.fetchone()
                 return success_response({'rules': result['value'] if result else ''})
             
+            elif path == 'league_info':
+                cur.execute("SELECT value FROM settings WHERE key = 'league_info'")
+                result = cur.fetchone()
+                return success_response({'league_info': result['value'] if result else ''})
+            
             else:
                 return error_response('Invalid path', 400)
         
@@ -126,6 +131,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 cur.execute(
                     "INSERT INTO settings (key, value) VALUES ('rules', %s) ON CONFLICT (key) DO UPDATE SET value=%s, updated_at=CURRENT_TIMESTAMP RETURNING *",
                     (body_data['rules'], body_data['rules'])
+                )
+                result = cur.fetchone()
+                conn.commit()
+                return success_response(result)
+            
+            elif path == 'league_info':
+                cur.execute(
+                    "INSERT INTO settings (key, value) VALUES ('league_info', %s) ON CONFLICT (key) DO UPDATE SET value=%s, updated_at=CURRENT_TIMESTAMP RETURNING *",
+                    (body_data['league_info'], body_data['league_info'])
                 )
                 result = cur.fetchone()
                 conn.commit()
