@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import LogoPicker from '@/components/LogoPicker';
 
 const API_URL = 'https://functions.poehali.dev/7c44af1d-941f-4cb8-922a-9b9a4f016a80';
 const UPLOAD_URL = 'https://functions.poehali.dev/8f2aa7eb-f52a-4303-bc7d-28dd1173e4cd';
@@ -67,6 +68,8 @@ export default function Index() {
   const [editChampion, setEditChampion] = useState<Partial<Champion>>({ year: '', team_name: '', logo: '' });
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [showEditStatsDialog, setShowEditStatsDialog] = useState(false);
+  const [logoPickerOpen, setLogoPickerOpen] = useState(false);
+  const [logoPickerTarget, setLogoPickerTarget] = useState<'team' | 'match-home' | 'match-away' | 'champion' | 'edit-team'>('team');
 
   const fetchData = async () => {
     try {
@@ -362,12 +365,16 @@ export default function Index() {
                         <Input placeholder="Название команды" value={editTeam.name} onChange={(e) => setEditTeam({...editTeam, name: e.target.value})} />
                         <div>
                           <Label>Логотип команды</Label>
-                          <Input 
-                            type="file" 
-                            accept="image/*"
-                            onChange={(e) => handleImageUpload(e, (url) => setEditTeam({...editTeam, logo: url}))}
-                          />
-                          {editTeam.logo && <img src={editTeam.logo} alt="Preview" className="mt-2 w-16 h-16 object-contain" />}
+                          <Button 
+                            type="button"
+                            variant="outline" 
+                            className="w-full" 
+                            onClick={() => { setLogoPickerTarget('team'); setLogoPickerOpen(true); }}
+                          >
+                            <Icon name="ImagePlus" size={16} className="mr-2" />
+                            Выбрать логотип
+                          </Button>
+                          {editTeam.logo && <img src={editTeam.logo} alt="Preview" className="mt-2 w-16 h-16 object-contain" crossOrigin="anonymous" />}
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <Input type="number" placeholder="Победы" value={editTeam.wins || ''} onChange={(e) => setEditTeam({...editTeam, wins: +e.target.value})} />
@@ -382,7 +389,7 @@ export default function Index() {
                         {teams.map(team => (
                           <div key={team.id} className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
                             <div className="flex items-center gap-2">
-                              {team.logo && <img src={team.logo} alt="" className="w-6 h-6 object-contain" />}
+                              {team.logo && <img src={team.logo} alt="" className="w-6 h-6 object-contain" crossOrigin="anonymous" />}
                               <span>{team.name}</span>
                             </div>
                             <div className="flex gap-2">
@@ -408,22 +415,30 @@ export default function Index() {
                         <Input placeholder="Хозяева" value={editMatch.home_team} onChange={(e) => setEditMatch({...editMatch, home_team: e.target.value})} />
                         <div>
                           <Label>Логотип хозяев</Label>
-                          <Input 
-                            type="file" 
-                            accept="image/*"
-                            onChange={(e) => handleImageUpload(e, (url) => setEditMatch({...editMatch, home_team_logo: url}))}
-                          />
-                          {editMatch.home_team_logo && <img src={editMatch.home_team_logo} alt="Preview" className="mt-2 w-12 h-12 object-contain" />}
+                          <Button 
+                            type="button"
+                            variant="outline" 
+                            className="w-full" 
+                            onClick={() => { setLogoPickerTarget('match-home'); setLogoPickerOpen(true); }}
+                          >
+                            <Icon name="ImagePlus" size={16} className="mr-2" />
+                            Выбрать логотип
+                          </Button>
+                          {editMatch.home_team_logo && <img src={editMatch.home_team_logo} alt="Preview" className="mt-2 w-12 h-12 object-contain" crossOrigin="anonymous" />}
                         </div>
                         <Input placeholder="Гости" value={editMatch.away_team} onChange={(e) => setEditMatch({...editMatch, away_team: e.target.value})} />
                         <div>
                           <Label>Логотип гостей</Label>
-                          <Input 
-                            type="file" 
-                            accept="image/*"
-                            onChange={(e) => handleImageUpload(e, (url) => setEditMatch({...editMatch, away_team_logo: url}))}
-                          />
-                          {editMatch.away_team_logo && <img src={editMatch.away_team_logo} alt="Preview" className="mt-2 w-12 h-12 object-contain" />}
+                          <Button 
+                            type="button"
+                            variant="outline" 
+                            className="w-full" 
+                            onClick={() => { setLogoPickerTarget('match-away'); setLogoPickerOpen(true); }}
+                          >
+                            <Icon name="ImagePlus" size={16} className="mr-2" />
+                            Выбрать логотип
+                          </Button>
+                          {editMatch.away_team_logo && <img src={editMatch.away_team_logo} alt="Preview" className="mt-2 w-12 h-12 object-contain" crossOrigin="anonymous" />}
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <Input type="number" placeholder="Счёт хозяев" value={editMatch.home_score || ''} onChange={(e) => setEditMatch({...editMatch, home_score: +e.target.value})} />
@@ -437,9 +452,9 @@ export default function Index() {
                             <div className="text-sm">
                               <div>{match.date} {match.time}</div>
                               <div className="flex items-center gap-2">
-                                {match.home_team_logo && <img src={match.home_team_logo} alt="" className="w-4 h-4 object-contain" />}
+                                {match.home_team_logo && <img src={match.home_team_logo} alt="" className="w-4 h-4 object-contain" crossOrigin="anonymous" />}
                                 {match.home_team} - {match.away_team}
-                                {match.away_team_logo && <img src={match.away_team_logo} alt="" className="w-4 h-4 object-contain" />}
+                                {match.away_team_logo && <img src={match.away_team_logo} alt="" className="w-4 h-4 object-contain" crossOrigin="anonymous" />}
                               </div>
                             </div>
                             <Button variant="destructive" size="sm" onClick={() => deleteMatch(match.id)}>
@@ -457,12 +472,16 @@ export default function Index() {
                         <Input placeholder="Название команды" value={editChampion.team_name} onChange={(e) => setEditChampion({...editChampion, team_name: e.target.value})} />
                         <div>
                           <Label>Логотип чемпиона</Label>
-                          <Input 
-                            type="file" 
-                            accept="image/*"
-                            onChange={(e) => handleImageUpload(e, (url) => setEditChampion({...editChampion, logo: url}))}
-                          />
-                          {editChampion.logo && <img src={editChampion.logo} alt="Preview" className="mt-2 w-16 h-16 object-contain" />}
+                          <Button 
+                            type="button"
+                            variant="outline" 
+                            className="w-full" 
+                            onClick={() => { setLogoPickerTarget('champion'); setLogoPickerOpen(true); }}
+                          >
+                            <Icon name="ImagePlus" size={16} className="mr-2" />
+                            Выбрать логотип
+                          </Button>
+                          {editChampion.logo && <img src={editChampion.logo} alt="Preview" className="mt-2 w-16 h-16 object-contain" crossOrigin="anonymous" />}
                         </div>
                         <Button onClick={addChampion} className="w-full">Добавить чемпиона</Button>
                       </div>
@@ -470,7 +489,7 @@ export default function Index() {
                         {champions.map(champion => (
                           <div key={champion.id} className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
                             <div className="flex items-center gap-2">
-                              {champion.logo && <img src={champion.logo} alt="" className="w-6 h-6 object-contain" />}
+                              {champion.logo && <img src={champion.logo} alt="" className="w-6 h-6 object-contain" crossOrigin="anonymous" />}
                               <span>{champion.year} - {champion.team_name}</span>
                             </div>
                             <Button variant="destructive" size="sm" onClick={() => deleteChampion(champion.id)}>
@@ -568,7 +587,7 @@ export default function Index() {
                         </td>
                         <td className="p-4">
                           <div className="flex items-center gap-2">
-                            {team.logo && <img src={team.logo} alt="" className="w-6 h-6 object-contain" />}
+                            {team.logo && <img src={team.logo} alt="" className="w-6 h-6 object-contain" crossOrigin="anonymous" />}
                             <span className="font-medium">{team.name}</span>
                           </div>
                         </td>
@@ -597,7 +616,7 @@ export default function Index() {
                       <div className="text-sm text-muted-foreground mb-2">{match.date} в {match.time}</div>
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-2 flex-1">
-                          {match.home_team_logo && <img src={match.home_team_logo} alt="" className="w-8 h-8 object-contain" />}
+                          {match.home_team_logo && <img src={match.home_team_logo} alt="" className="w-8 h-8 object-contain" crossOrigin="anonymous" />}
                           <span className="font-semibold text-lg">{match.home_team}</span>
                         </div>
                         <div className="text-2xl font-bold text-accent px-4">
@@ -608,7 +627,7 @@ export default function Index() {
                         </div>
                         <div className="flex items-center gap-2 flex-1 justify-end">
                           <span className="font-semibold text-lg">{match.away_team}</span>
-                          {match.away_team_logo && <img src={match.away_team_logo} alt="" className="w-8 h-8 object-contain" />}
+                          {match.away_team_logo && <img src={match.away_team_logo} alt="" className="w-8 h-8 object-contain" crossOrigin="anonymous" />}
                         </div>
                       </div>
                     </div>
@@ -626,7 +645,7 @@ export default function Index() {
                     {champion.logo && (
                       <div className="relative">
                         <div className="absolute inset-0 bg-accent/20 blur-lg"></div>
-                        <img src={champion.logo} alt="" className="relative w-16 h-16 object-contain" />
+                        <img src={champion.logo} alt="" className="relative w-16 h-16 object-contain" crossOrigin="anonymous" />
                       </div>
                     )}
                     <div>
@@ -717,12 +736,16 @@ export default function Index() {
               </div>
               <div>
                 <Label>Логотип команды</Label>
-                <Input 
-                  type="file" 
-                  accept="image/*"
-                  onChange={(e) => handleImageUpload(e, (url) => setSelectedTeam({...selectedTeam, logo: url}))}
-                />
-                {selectedTeam.logo && <img src={selectedTeam.logo} alt="Preview" className="mt-2 w-16 h-16 object-contain" />}
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  className="w-full" 
+                  onClick={() => { setLogoPickerTarget('edit-team'); setLogoPickerOpen(true); }}
+                >
+                  <Icon name="ImagePlus" size={16} className="mr-2" />
+                  Выбрать логотип
+                </Button>
+                {selectedTeam.logo && <img src={selectedTeam.logo} alt="Preview" className="mt-2 w-16 h-16 object-contain" crossOrigin="anonymous" />}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -753,6 +776,31 @@ export default function Index() {
           )}
         </DialogContent>
       </Dialog>
+
+      <LogoPicker
+        open={logoPickerOpen}
+        onClose={() => setLogoPickerOpen(false)}
+        onSelect={(url) => {
+          if (logoPickerTarget === 'team') {
+            setEditTeam({...editTeam, logo: url});
+          } else if (logoPickerTarget === 'match-home') {
+            setEditMatch({...editMatch, home_team_logo: url});
+          } else if (logoPickerTarget === 'match-away') {
+            setEditMatch({...editMatch, away_team_logo: url});
+          } else if (logoPickerTarget === 'champion') {
+            setEditChampion({...editChampion, logo: url});
+          } else if (logoPickerTarget === 'edit-team' && selectedTeam) {
+            setSelectedTeam({...selectedTeam, logo: url});
+          }
+        }}
+        currentLogo={
+          logoPickerTarget === 'team' ? editTeam.logo :
+          logoPickerTarget === 'match-home' ? editMatch.home_team_logo :
+          logoPickerTarget === 'match-away' ? editMatch.away_team_logo :
+          logoPickerTarget === 'champion' ? editChampion.logo :
+          logoPickerTarget === 'edit-team' ? selectedTeam?.logo : ''
+        }
+      />
     </div>
   );
 }
