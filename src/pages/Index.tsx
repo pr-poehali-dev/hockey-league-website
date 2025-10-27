@@ -31,7 +31,7 @@ interface Match {
 }
 
 const STORAGE_KEY = 'mkhl_data';
-const ADMIN_PASSWORD = 'MKHL12345';
+const ADMIN_PASSWORD = 'phldyez';
 
 const initialTeams: Team[] = [];
 const initialMatches: Match[] = [];
@@ -138,8 +138,8 @@ export default function Index() {
               <Icon name="Trophy" className="relative text-accent" size={48} />
             </div>
             <div>
-              <h1 className="text-4xl font-bold text-white">МКХЛ</h1>
-              <p className="text-white/70">Межконтинентальная Хоккейная Лига</p>
+              <h1 className="text-4xl font-bold text-white">PHL</h1>
+              <p className="text-white/70">Первая Хоккейная Лига</p>
             </div>
           </div>
           <div className="flex gap-2">
