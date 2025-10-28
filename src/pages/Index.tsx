@@ -79,10 +79,15 @@ export default function Index() {
         fetch(`${API_URL}?path=league_info`)
       ]);
       
-      setTeams(await teamsRes.json());
-      setMatches(await matchesRes.json());
-      setSocials(await socialsRes.json());
-      setChampions(await championsRes.json());
+      const teamsData = await teamsRes.json();
+      const matchesData = await matchesRes.json();
+      const socialsData = await socialsRes.json();
+      const championsData = await championsRes.json();
+      
+      setTeams(Array.isArray(teamsData) ? teamsData : []);
+      setMatches(Array.isArray(matchesData) ? matchesData : []);
+      setSocials(Array.isArray(socialsData) ? socialsData : []);
+      setChampions(Array.isArray(championsData) ? championsData : []);
       const rulesData = await rulesRes.json();
       setRules(rulesData.rules || '');
       const leagueInfoData = await leagueInfoRes.json();
