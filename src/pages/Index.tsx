@@ -33,8 +33,8 @@ interface Match {
   away_team: string;
   home_score?: number;
   away_score?: number;
-  overtime?: boolean;
-  shootout?: boolean;
+  home_team_logo?: string;
+  away_team_logo?: string;
 }
 
 interface SocialLink {
@@ -63,9 +63,7 @@ export default function Index() {
   const { toast } = useToast();
 
   const [editTeam, setEditTeam] = useState<Partial<Team>>({ name: '', wins: 0, losses: 0, points: 0, goals_for: 0, goals_against: 0, logo: '' });
-  const [editMatch, setEditMatch] = useState<Partial<Match>>({ date: '', time: '', home_team: '', away_team: '', home_score: undefined, away_score: undefined, overtime: false, shootout: false });
-  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
-  const [showEditMatchDialog, setShowEditMatchDialog] = useState(false);
+  const [editMatch, setEditMatch] = useState<Partial<Match>>({ date: '', time: '', home_team: '', away_team: '', home_team_logo: '', away_team_logo: '' });
   const [editChampion, setEditChampion] = useState<Partial<Champion>>({ year: '', team_name: '', logo: '' });
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [showEditStatsDialog, setShowEditStatsDialog] = useState(false);
@@ -227,43 +225,15 @@ export default function Index() {
           awayTeam: editMatch.away_team,
           homeScore: editMatch.home_score,
           awayScore: editMatch.away_score,
-          overtime: editMatch.overtime || false,
-          shootout: editMatch.shootout || false
+          homeTeamLogo: editMatch.home_team_logo || '',
+          awayTeamLogo: editMatch.away_team_logo || ''
         })
       });
       await fetchData();
-      setEditMatch({ date: '', time: '', home_team: '', away_team: '', home_score: undefined, away_score: undefined, overtime: false, shootout: false });
+      setEditMatch({ date: '', time: '', home_team: '', away_team: '', home_team_logo: '', away_team_logo: '' });
       toast({ title: 'Матч добавлен' });
     } catch (error) {
       toast({ title: 'Ошибка', variant: 'destructive' });
-    }
-  };
-
-  const updateMatch = async () => {
-    if (selectedMatch) {
-      try {
-        await fetch(`${API_URL}?path=matches`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: selectedMatch.id,
-            date: selectedMatch.date,
-            time: selectedMatch.time,
-            homeTeam: selectedMatch.home_team,
-            awayTeam: selectedMatch.away_team,
-            homeScore: selectedMatch.home_score,
-            awayScore: selectedMatch.away_score,
-            overtime: selectedMatch.overtime || false,
-            shootout: selectedMatch.shootout || false
-          })
-        });
-        await fetchData();
-        setShowEditMatchDialog(false);
-        setSelectedMatch(null);
-        toast({ title: 'Матч обновлен' });
-      } catch (error) {
-        toast({ title: 'Ошибка', variant: 'destructive' });
-      }
     }
   };
 
@@ -360,50 +330,7 @@ export default function Index() {
     setTeams(newTeams);
   };
 
-  const calculateStandings = () => {
-    const standings = teams.map(team => ({
-      ...team,
-      wins: 0,
-      losses: 0,
-      points: 0,
-      goals_for: 0,
-      goals_against: 0
-    }));
-
-    matches.forEach(match => {
-      if (match.home_score !== undefined && match.away_score !== undefined) {
-        const homeTeam = standings.find(t => t.name === match.home_team);
-        const awayTeam = standings.find(t => t.name === match.away_team);
-
-        if (homeTeam && awayTeam) {
-          homeTeam.goals_for += match.home_score;
-          homeTeam.goals_against += match.away_score;
-          awayTeam.goals_for += match.away_score;
-          awayTeam.goals_against += match.home_score;
-
-          if (match.home_score > match.away_score) {
-            homeTeam.wins += 1;
-            homeTeam.points += 2;
-            awayTeam.losses += 1;
-            if (match.overtime || match.shootout) {
-              awayTeam.points += 1;
-            }
-          } else if (match.away_score > match.home_score) {
-            awayTeam.wins += 1;
-            awayTeam.points += 2;
-            homeTeam.losses += 1;
-            if (match.overtime || match.shootout) {
-              homeTeam.points += 1;
-            }
-          }
-        }
-      }
-    });
-
-    return standings;
-  };
-
-  const displayTeams = isAdmin ? teams : calculateStandings().sort((a, b) => {
+  const displayTeams = isAdmin ? teams : [...teams].sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
     const diffA = a.goals_for - a.goals_against;
     const diffB = b.goals_for - b.goals_against;
@@ -698,60 +625,31 @@ export default function Index() {
 
           <TabsContent value="schedule" className="mt-6">
             <div className="grid gap-4 animate-fade-in">
-              {matches.map(match => {
-                const homeTeam = teams.find(t => t.name === match.home_team);
-                const awayTeam = teams.find(t => t.name === match.away_team);
-                
-                return (
-                  <Card key={match.id} className="p-6 bg-card/80 backdrop-blur-sm border-primary/20 hover:border-primary/40 transition-all">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="text-sm text-muted-foreground mb-2">{match.date} в {match.time}</div>
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="flex items-center gap-2 flex-1">
-                            {homeTeam?.logo && <img src={homeTeam.logo} alt="" className="w-8 h-8 object-contain" />}
-                            <span className="font-semibold text-lg">{match.home_team}</span>
-                          </div>
-                          <div className="flex flex-col items-center">
-                            <div className="text-2xl font-bold text-accent px-4">
-                              {match.home_score !== undefined && match.away_score !== undefined 
-                                ? `${match.home_score} : ${match.away_score}`
-                                : 'VS'
-                              }
-                            </div>
-                            {(match.overtime || match.shootout) && (
-                              <div className="text-xs text-muted-foreground mt-1">
-                                {match.shootout ? 'Буллиты' : 'Овертайм'}
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 flex-1 justify-end">
-                            <span className="font-semibold text-lg">{match.away_team}</span>
-                            {awayTeam?.logo && <img src={awayTeam.logo} alt="" className="w-8 h-8 object-contain" />}
-                          </div>
+              {matches.map(match => (
+                <Card key={match.id} className="p-6 bg-card/80 backdrop-blur-sm border-primary/20 hover:border-primary/40 transition-all">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="text-sm text-muted-foreground mb-2">{match.date} в {match.time}</div>
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-2 flex-1">
+                          {match.home_team_logo && <img src={match.home_team_logo} alt="" className="w-8 h-8 object-contain" />}
+                          <span className="font-semibold text-lg">{match.home_team}</span>
+                        </div>
+                        <div className="text-2xl font-bold text-accent px-4">
+                          {match.home_score !== undefined && match.away_score !== undefined 
+                            ? `${match.home_score} : ${match.away_score}`
+                            : 'VS'
+                          }
+                        </div>
+                        <div className="flex items-center gap-2 flex-1 justify-end">
+                          <span className="font-semibold text-lg">{match.away_team}</span>
+                          {match.away_team_logo && <img src={match.away_team_logo} alt="" className="w-8 h-8 object-contain" />}
                         </div>
                       </div>
-                      {isAdmin && (
-                        <div className="ml-4 flex gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => { 
-                              setSelectedMatch(match); 
-                              setShowEditMatchDialog(true); 
-                            }}
-                          >
-                            <Icon name="Edit" size={16} />
-                          </Button>
-                          <Button variant="destructive" size="sm" onClick={() => deleteMatch(match.id)}>
-                            <Icon name="Trash2" size={16} />
-                          </Button>
-                        </div>
-                      )}
                     </div>
-                  </Card>
-                );
-              })}
+                  </div>
+                </Card>
+              ))}
             </div>
           </TabsContent>
 
@@ -886,97 +784,6 @@ export default function Index() {
                 </div>
               </div>
               <Button onClick={updateTeamStats} className="w-full">Сохранить</Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showEditMatchDialog} onOpenChange={setShowEditMatchDialog}>
-        <DialogContent className="bg-card border-primary/20 max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Редактировать матч</DialogTitle>
-          </DialogHeader>
-          {selectedMatch && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Дата</Label>
-                  <Input value={selectedMatch.date} onChange={(e) => setSelectedMatch({...selectedMatch, date: e.target.value})} />
-                </div>
-                <div>
-                  <Label>Время</Label>
-                  <Input value={selectedMatch.time} onChange={(e) => setSelectedMatch({...selectedMatch, time: e.target.value})} />
-                </div>
-              </div>
-              
-              <div>
-                <Label>Хозяева</Label>
-                <Input value={selectedMatch.home_team} onChange={(e) => setSelectedMatch({...selectedMatch, home_team: e.target.value})} />
-              </div>
-
-              <div>
-                <Label>Гости</Label>
-                <Input value={selectedMatch.away_team} onChange={(e) => setSelectedMatch({...selectedMatch, away_team: e.target.value})} />
-              </div>
-
-              <div className="border-t pt-4">
-                <h4 className="font-semibold mb-3">Результат матча</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Счет хозяев</Label>
-                    <Input 
-                      type="number" 
-                      value={selectedMatch.home_score ?? ''} 
-                      onChange={(e) => setSelectedMatch({...selectedMatch, home_score: e.target.value ? +e.target.value : undefined})} 
-                      placeholder="Не указан"
-                    />
-                  </div>
-                  <div>
-                    <Label>Счет гостей</Label>
-                    <Input 
-                      type="number" 
-                      value={selectedMatch.away_score ?? ''} 
-                      onChange={(e) => setSelectedMatch({...selectedMatch, away_score: e.target.value ? +e.target.value : undefined})} 
-                      placeholder="Не указан"
-                    />
-                  </div>
-                </div>
-
-                {selectedMatch.home_score !== undefined && selectedMatch.away_score !== undefined && (
-                  <div className="mt-4 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <input 
-                        type="checkbox" 
-                        id="overtime"
-                        checked={selectedMatch.overtime || false}
-                        onChange={(e) => setSelectedMatch({
-                          ...selectedMatch, 
-                          overtime: e.target.checked,
-                          shootout: e.target.checked ? false : selectedMatch.shootout
-                        })}
-                        className="w-4 h-4"
-                      />
-                      <Label htmlFor="overtime" className="cursor-pointer">Овертайм (проигравший получит 1 очко)</Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input 
-                        type="checkbox" 
-                        id="shootout"
-                        checked={selectedMatch.shootout || false}
-                        onChange={(e) => setSelectedMatch({
-                          ...selectedMatch, 
-                          shootout: e.target.checked,
-                          overtime: e.target.checked ? false : selectedMatch.overtime
-                        })}
-                        className="w-4 h-4"
-                      />
-                      <Label htmlFor="shootout" className="cursor-pointer">Буллиты (проигравший получит 1 очко)</Label>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <Button onClick={updateMatch} className="w-full">Сохранить</Button>
             </div>
           )}
         </DialogContent>

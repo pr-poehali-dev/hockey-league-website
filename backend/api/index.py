@@ -43,7 +43,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 return success_response(teams)
             
             elif path == 'matches':
-                cur.execute('SELECT id, date, time, home_team, away_team, home_score, away_score, overtime, shootout FROM matches ORDER BY date DESC, time DESC')
+                cur.execute('SELECT * FROM matches ORDER BY date DESC, time DESC')
                 matches = cur.fetchall()
                 return success_response(matches)
             
@@ -86,10 +86,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             elif path == 'matches':
                 cur.execute(
-                    'INSERT INTO matches (date, time, home_team, away_team, home_score, away_score, overtime, shootout) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING *',
+                    'INSERT INTO matches (date, time, home_team, away_team, home_score, away_score, home_team_logo, away_team_logo) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING *',
                     (body_data['date'], body_data['time'], body_data['homeTeam'], 
                      body_data['awayTeam'], body_data.get('homeScore'), body_data.get('awayScore'),
-                     body_data.get('overtime', False), body_data.get('shootout', False))
+                     body_data.get('homeTeamLogo', ''), body_data.get('awayTeamLogo', ''))
                 )
                 match = cur.fetchone()
                 conn.commit()
@@ -117,17 +117,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 team = cur.fetchone()
                 conn.commit()
                 return success_response(team)
-            
-            elif path == 'matches':
-                cur.execute(
-                    'UPDATE matches SET date=%s, time=%s, home_team=%s, away_team=%s, home_score=%s, away_score=%s, overtime=%s, shootout=%s WHERE id=%s RETURNING *',
-                    (body_data['date'], body_data['time'], body_data['homeTeam'], 
-                     body_data['awayTeam'], body_data.get('homeScore'), body_data.get('awayScore'),
-                     body_data.get('overtime', False), body_data.get('shootout', False), body_data['id'])
-                )
-                match = cur.fetchone()
-                conn.commit()
-                return success_response(match)
             
             elif path == 'socials':
                 cur.execute(
