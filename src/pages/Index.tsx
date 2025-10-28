@@ -316,7 +316,21 @@ export default function Index() {
     }
   };
 
-  const sortedTeams = [...teams].sort((a, b) => {
+  const moveTeamUp = (index: number) => {
+    if (index === 0) return;
+    const newTeams = [...teams];
+    [newTeams[index - 1], newTeams[index]] = [newTeams[index], newTeams[index - 1]];
+    setTeams(newTeams);
+  };
+
+  const moveTeamDown = (index: number) => {
+    if (index === teams.length - 1) return;
+    const newTeams = [...teams];
+    [newTeams[index], newTeams[index + 1]] = [newTeams[index + 1], newTeams[index]];
+    setTeams(newTeams);
+  };
+
+  const displayTeams = isAdmin ? teams : [...teams].sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
     const diffA = a.goals_for - a.goals_against;
     const diffB = b.goals_for - b.goals_against;
@@ -384,13 +398,29 @@ export default function Index() {
                         <Button onClick={addTeam} className="w-full">Добавить команду</Button>
                       </div>
                       <div className="mt-4 space-y-2">
-                        {teams.map(team => (
+                        {teams.map((team, index) => (
                           <div key={team.id} className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
                             <div className="flex items-center gap-2">
                               {team.logo && <img src={team.logo} alt="" className="w-6 h-6 object-contain" />}
                               <span>{team.name}</span>
                             </div>
                             <div className="flex gap-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => moveTeamUp(index)}
+                                disabled={index === 0}
+                              >
+                                <Icon name="ChevronUp" size={16} />
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => moveTeamDown(index)}
+                                disabled={index === teams.length - 1}
+                              >
+                                <Icon name="ChevronDown" size={16} />
+                              </Button>
                               <Button variant="outline" size="sm" onClick={() => { setSelectedTeam(team); setShowEditStatsDialog(true); }}>
                                 <Icon name="Edit" size={16} />
                               </Button>
@@ -566,7 +596,7 @@ export default function Index() {
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedTeams.map((team, index) => (
+                    {displayTeams.map((team, index) => (
                       <tr key={team.id} className="border-b border-primary/10 hover:bg-primary/5 transition-colors">
                         <td className="p-4">
                           <span className="font-semibold text-accent">{index + 1}</span>
